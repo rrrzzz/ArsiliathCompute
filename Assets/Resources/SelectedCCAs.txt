@@ -1,0 +1,1 @@
+Threshold: 16, States: 32, Range: 8, Moore: True

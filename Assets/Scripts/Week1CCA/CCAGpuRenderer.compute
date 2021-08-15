@@ -1,9 +1,165 @@
-#pragma kernel CSMain
+#pragma kernel Reset
+#pragma kernel Simulate
 
-RWTexture2D<float4> Result;
+Texture2D<float> _ReadTexture;
+Texture2D<float> _Mask;
+SamplerState sampler__ReadTexture;
+SamplerState sampler__Mask;
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
-{    
+RWTexture2D<float> _WriteTexture;
+RWTexture2D<float4> _OutTexture;
+
+uint _NumStates, _Threshold, _Rez, _ColorMode, _MaskRez;
+int _Range;
+bool _Moore;
+float4 _StateColors[32];
+float _SampleThreshold;
+
+float2 Random(float2 p)
+{
+    float3 a = frac(p.xyx * float3(123.34, 234.34, 345.65));
+    a += dot(a, a + 34.45);
+    return frac(float2(a.x * a.y, a.y * a.z));
+}
+
+float4 HsvToRgb(float3 c)
+{
+    float3 rgb = clamp(abs((c.x * 6.0 + float3(0.0, 4.0, 2.0)) % 6.0 - 3.0) - 1.0, 0.0, 1.0);
+    rgb = rgb * rgb * (3.0 - 2.0 * rgb);
+    float3 o = c.z * lerp(float3(1.0, 1.0, 1.0), rgb, c.y);
+    return float4(o.r, o.g, o.b, 1);
+}
+
+int UpdateCellState(inout uint currentState, uint2 cellCoord)
+{
+    uint nextState = currentState + 1 == _NumStates ? 0 : currentState + 1;
+    uint counter = 0;    
     
+    float halfRez = _MaskRez * 0.5;
+    int range = (int)halfRez;
+    
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            if (x == 0 && y == 0) continue;
+    
+            float2 uv = (float2(x, y) + halfRez) / _MaskRez;
+            float3 fullColor = _Mask.SampleLevel(sampler__Mask, uv, 0);
+            float barrier = max(max(fullColor.x, fullColor.y), fullColor.z);
+            bool shouldSample = barrier > _SampleThreshold;
+            if (shouldSample)
+            {
+                uint neighbourState = _ReadTexture.SampleLevel(sampler__ReadTexture, (cellCoord + int2(x,y)) / (float)_Rez, 0);
+                counter += (uint)(neighbourState == nextState);
+            }
+        }       
+    }     
+    
+    if (counter >= _Threshold)
+        currentState = nextState;
+
+    return counter;
+}
+
+void RenderTexture(uint3 texCoord, float state, float count)
+{
+    float s = state / (_NumStates - 1);
+    float c = count / _Threshold;
+
+    float3 hsb = float3(1,1,1);
+    
+    if (_ColorMode > 3)
+    {
+        hsb = float3(0, .9, 1);
+    }
+
+    switch (_ColorMode)
+    {
+        case 0:
+            _OutTexture[texCoord.xy] = s;
+        break;
+        
+        case 1:
+        _OutTexture[texCoord.xy] *= .4;
+        _OutTexture[texCoord.xy] += s;
+        break;
+    
+        case 2:
+        _OutTexture[texCoord.xy] = c;
+        break;
+    
+        case 3:
+        _OutTexture[texCoord.xy] *= .3;
+        _OutTexture[texCoord.xy] += c;
+        break;
+    
+        case 4:
+        hsb.x = s;
+        _OutTexture[texCoord.xy] = HsvToRgb(hsb);
+        break;
+    
+        case 5:
+        hsb.x = hsb.y = hsb.z = s;
+        hsb.x = lerp(.3, .0, hsb.x);
+        hsb.y += .7;
+        hsb.z += .6;
+        _OutTexture[texCoord.xy] = HsvToRgb(hsb);
+        break;
+    
+        case 6:
+        hsb.x = hsb.y = hsb.z = s;
+        hsb.x = lerp(.3, .0, hsb.x);
+        hsb.y += .7;
+        hsb.z -= .5;
+        hsb.z *= 5;
+        hsb.z = clamp(hsb.z, 0, 1);
+        _OutTexture[texCoord.xy] += HsvToRgb(hsb);
+        _OutTexture[texCoord.xy] *= .7;
+        break;
+    
+        case 7:
+        hsb.x = hsb.y = hsb.z = c;
+        hsb.x = lerp(.7, .3, hsb.x);
+        hsb.y += .7;
+        hsb.z = clamp(hsb.z, 0, 1);
+        _OutTexture[texCoord.xy] = HsvToRgb(hsb);
+        break;
+    
+        case 8:
+        // TRY:
+        // 3/15/19/M
+        hsb.x = hsb.y = hsb.z = c;
+        //hsb.x = lerp(.4, 1, hsb.x);  	// 1/3/4 M
+        hsb.x = lerp(0, .1, hsb.x);  	// 8/14/2/N
+        hsb.y += .7;
+        _OutTexture[texCoord.xy] += HsvToRgb(hsb);
+        //_OutTexture[texCoord.xy] *= .90; // 1/3/4/M
+        _OutTexture[texCoord.xy] *= .70;
+        break;
+    
+        case 9:
+        _OutTexture[texCoord.xy] = _StateColors[state];	
+        break;        
+    }
+	
+    ////////////////////////////////////////////
+    // Crop
+    // float d = distance(float2(_Rez / 2.0, _Rez / 2.0), texCoord.xy) / (_Rez / 2.0);
+    // _OutTexture[texCoord.xy] *= smoothstep(.9, .8, d);
+}
+
+[numthreads(16, 16, 1)]
+void Simulate(uint3 id : SV_DispatchThreadID)
+{
+    uint currentState = _ReadTexture[id.xy];
+    int count = UpdateCellState(currentState, id.xy);
+    _WriteTexture[id.xy] = currentState;
+    RenderTexture(id, currentState, count);
+}
+
+[numthreads(16, 16, 1)]
+void Reset(uint3 id : SV_DispatchThreadID)
+{
+    _WriteTexture[id.xy] = (int)(Random(id.xy * 0.01).x * _NumStates);
 }

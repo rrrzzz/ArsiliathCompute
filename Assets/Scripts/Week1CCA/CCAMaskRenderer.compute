@@ -1,0 +1,67 @@
+#pragma kernel Reset
+#pragma kernel Simulate
+
+Texture2D<float> _ReadTexture;
+SamplerState sampler__ReadTexture;
+
+RWTexture2D<float> _WriteTexture;
+RWTexture2D<float4> _OutTexture;
+
+uint _NumStates, _Threshold, _Rez;
+int _Range;
+bool _Moore;
+
+float2 Random(float2 p)
+{
+    float3 a = frac(p.xyx * float3(123.34, 234.34, 345.65));
+    a += dot(a, a + 34.45);
+    return frac(float2(a.x * a.y, a.y * a.z));
+}
+
+int UpdateCellState(inout uint currentState, uint2 cellCoord)
+{
+    uint nextState = currentState + 1 == _NumStates ? 0 : currentState + 1;
+    uint counter = 0;
+    
+    for (int x = -_Range; x <= _Range; x++) {
+        for (int y = -_Range; y <= _Range; y++) {
+
+            // ignore self
+            if ((x == 0 && y == 0)) {
+                continue;
+            }
+
+            if (_Moore || (x == 0 || y == 0))
+            {                
+                uint s = _ReadTexture.SampleLevel(sampler__ReadTexture, (cellCoord.xy + int2(x, y)) / (float)_Rez, 0);
+                counter += (uint) (s == nextState);
+            }
+        }
+    }     
+    
+    if (counter >= _Threshold)
+        currentState = nextState;
+
+    return counter;
+}
+
+void RenderTexture(uint3 texCoord, float state)
+{
+    float s = state / (_NumStates - 1);
+    _OutTexture[texCoord.xy] = float4(s,s,s,1);
+}
+
+[numthreads(8, 8, 1)]
+void Simulate(uint3 id : SV_DispatchThreadID)
+{
+    uint currentState = _ReadTexture[id.xy];
+    UpdateCellState(currentState, id.xy);
+    _WriteTexture[id.xy] = currentState;
+    RenderTexture(id, currentState);
+}
+
+[numthreads(8, 8, 1)]
+void Reset(uint3 id : SV_DispatchThreadID)
+{
+    _WriteTexture[id.xy] = (int)(Random(id.xy * 0.01).x * _NumStates);
+}
