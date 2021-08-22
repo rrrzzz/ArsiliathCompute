@@ -1,0 +1,75 @@
+#pragma kernel Render
+#pragma kernel Simulate
+#pragma kernel ResetTexture
+#pragma kernel ResetAgents
+
+#include "../Common.cginc"
+
+Texture2D<float> _ReadTex;
+SamplerState sampler__ReadTex;
+
+RWTexture2D<float4> _VizTex;
+RWTexture2D<float> _WriteTex;
+
+struct Agent
+{
+    float2 pos;
+    float2 dir;
+};
+
+RWStructuredBuffer<Agent> _Agents;
+
+int _Rez, _AgentCount;
+float _Time;
+
+float2 GetRandomPos(float x)
+{
+    return Random(float2(_Time * 0.001, x * 0.1 / _Time)) * (_Rez - 1);
+}
+
+float2 GetRandomDir(float2 id)
+{
+    float2 rnd = Random(id.xx * 0.1 + sin(_Time));
+    return normalize(2 * rnd - 1);    
+}
+
+[numthreads(1,1,1)]
+void Render (uint3 id : SV_DispatchThreadID)
+{
+    float2 agentPos = round(_Agents[id.x].pos);
+    _VizTex[agentPos] = float4(0, 0, 1, 1);    
+}
+
+[numthreads(1,1,1)]
+void Simulate (uint3 id : SV_DispatchThreadID)
+{    
+    Agent a = _Agents[id.x];
+
+    a.pos += a.dir;
+    
+    if(a.pos.x < 0)
+        a.pos.x = _Rez - 1;
+    if(a.pos.y < 0)
+        a.pos.y = _Rez - 1;
+    
+    a.pos %= _Rez;   
+    a.dir = GetRandomDir(id.x);
+    
+    _Agents[id.x] = a;
+}
+
+[numthreads(1,1,1)]
+void ResetTexture (uint3 id : SV_DispatchThreadID)
+{    
+    _WriteTex[id.xy] = 0;
+}
+
+[numthreads(1,1,1)]
+void ResetAgents (uint3 id : SV_DispatchThreadID)
+{
+    Agent currentAgent;
+    currentAgent.dir = float2(0, 0);
+    currentAgent.pos = GetRandomPos(id.x);
+
+    _Agents[id.x] = currentAgent;
+}

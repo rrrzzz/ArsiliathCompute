@@ -53,7 +53,6 @@ public class CCAManager : MonoBehaviour
     private int _simulateKernelId;
     private static readonly int s_MainTex = Shader.PropertyToID("_UnlitColorMap");
     private int _dispatchThreadCount;
-    private int _maskThreadCount;
     private bool _isSimStarted;
 
     public void Start()
@@ -89,7 +88,6 @@ public class CCAManager : MonoBehaviour
     [Button]
     private void StartSimulation()
     {
-        _maskThreadCount = maskRezTrue / 16;
         _dispatchThreadCount = resolution / 16;
         CreateTextures();
         CreateMaskTextures();
@@ -107,7 +105,6 @@ public class CCAManager : MonoBehaviour
     private void RandomizeAndStart()
     {
         _dispatchThreadCount = resolution / 16;
-        _maskThreadCount = maskRezTrue / 16;
         CreateTextures();
         CreateMaskTextures();
         caaMaterial.SetTexture(s_MainTex, _outTexture);
@@ -148,7 +145,7 @@ public class CCAManager : MonoBehaviour
         {
             var t = (float)i / (keys - 1);
             
-            var randColor = Random.ColorHSV(0f, 1, 0, 1, 0, 1);
+            var randColor = Random.ColorHSV(0f, 1, 0, 1, 1, 1);
             
             colorKeys[i] = new GradientColorKey(randColor, t);
             alphaKeys[i] = new GradientAlphaKey(1, t);
