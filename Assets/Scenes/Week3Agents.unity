@@ -168,11 +168,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cs: {fileID: 7200000, guid: 2b9563f9669635344ae8c70dea7c969d, type: 3}
   renderMat: {fileID: 2100000, guid: da445ddc8ad19a745b4a5179db3ee7f5, type: 2}
-  resolution: 10
+  resolution: 1024
   stepsPerFrame: 0
   stepInterval: 0
-  agentCount: 1
-  range: 1
+  agentCount: 512000
+  range: 10
+  dirThreshold: 0.107
+  trailDeposit: 0.3
+  trailDecayFactor: 0.954
   isSimulating: 0
 --- !u!1 &830522509
 GameObject:
@@ -678,7 +681,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1241333695}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0.09, y: 8.69, z: 0}
+  m_LocalPosition: {x: -0.09, y: 8.67, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
