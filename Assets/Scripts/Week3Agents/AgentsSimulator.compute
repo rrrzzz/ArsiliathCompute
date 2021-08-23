@@ -2,6 +2,7 @@
 #pragma kernel Simulate
 #pragma kernel ResetTexture
 #pragma kernel ResetAgents
+#pragma kernel MakeTrail
 
 #include "../Common.cginc"
 
@@ -10,6 +11,7 @@ SamplerState sampler__ReadTex;
 
 RWTexture2D<float4> _VizTex;
 RWTexture2D<float> _WriteTex;
+RWTexture2D<float> _StigmergyTex;
 
 struct Agent
 {
@@ -19,8 +21,8 @@ struct Agent
 
 RWStructuredBuffer<Agent> _Agents;
 
-int _Rez, _AgentCount;
-float _Time;
+int _Rez, _AgentCount, _Range;
+float _Time, _DirThreshold, _TrailDeposit, _TrailDecay;
 
 float2 GetRandomPos(float x)
 {
@@ -33,42 +35,78 @@ float2 GetRandomDir(float2 id)
     return normalize(2 * rnd - 1);    
 }
 
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
 void Render (uint3 id : SV_DispatchThreadID)
 {
-    float2 agentPos = round(_Agents[id.x].pos);
-    _VizTex[agentPos] = float4(0, 0, 1, 1);    
+    float agentVal = _WriteTex[id.xy];
+    float trailVal = _StigmergyTex[id.xy];
+    _VizTex[id.xy] = float4(trailVal, trailVal, trailVal, 1);    
 }
 
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
+void MakeTrail (uint3 id : SV_DispatchThreadID)
+{    
+    _StigmergyTex[id.xy] = (_StigmergyTex[id.xy] + _WriteTex[id.xy] * _TrailDeposit) * _TrailDecay;    
+}
+
+[numthreads(64,1,1)]
 void Simulate (uint3 id : SV_DispatchThreadID)
 {    
     Agent a = _Agents[id.x];
+    float2 topPos = float2(-1,0);
+    float maxVal = 0;
+    
+    for (int x = -_Range; x <= _Range; x++)
+    {
+        for (int y = -_Range; y <= _Range; y++)
+        {
+            if (x == 0 && y == 0)
+                continue;
 
+            float currentVal = _ReadTex.SampleLevel(sampler__ReadTex, (round(a.pos) + int2(x, y)) / _Rez, 0);
+
+            if (currentVal > maxVal)
+            {
+                float2 currentPos = a.pos + int2(x, y);
+                float2 currentDir = normalize(currentPos - a.pos);
+                if (dot(currentDir, a.dir) > _DirThreshold)
+                {
+                    maxVal = currentVal;
+                    topPos = a.pos + int2(x, y); 
+                }                
+            }
+        }
+    }
+
+    if (topPos.x > -1)
+    {        
+        a.dir = normalize(topPos - a.pos);
+    }        
+        
     a.pos += a.dir;
     
     if(a.pos.x < 0)
-        a.pos.x = _Rez - 1;
+        a.pos.x += _Rez;
     if(a.pos.y < 0)
-        a.pos.y = _Rez - 1;
+        a.pos.y += _Rez;
     
-    a.pos %= _Rez;   
-    a.dir = GetRandomDir(id.x);
-    
+    a.pos %= _Rez;       
+    int2 texCoord = round(a.pos) % _Rez;
+    _WriteTex[texCoord] = 1;
     _Agents[id.x] = a;
 }
 
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
 void ResetTexture (uint3 id : SV_DispatchThreadID)
 {    
     _WriteTex[id.xy] = 0;
 }
 
-[numthreads(1,1,1)]
+[numthreads(64,1,1)]
 void ResetAgents (uint3 id : SV_DispatchThreadID)
 {
     Agent currentAgent;
-    currentAgent.dir = float2(0, 0);
+    currentAgent.dir = GetRandomDir(id.x);
     currentAgent.pos = GetRandomPos(id.x);
 
     _Agents[id.x] = currentAgent;

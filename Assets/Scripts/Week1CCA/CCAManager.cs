@@ -53,7 +53,7 @@ public class CCAManager : MonoBehaviour
     private int _simulateKernelId;
     private static readonly int s_MainTex = Shader.PropertyToID("_UnlitColorMap");
     private int _dispatchThreadCount;
-    private bool _isSimStarted;
+  
 
     public void Start()
     {
@@ -97,9 +97,6 @@ public class CCAManager : MonoBehaviour
         ResetReadTexture();
         ResetMaskReadTexture();
     }
-
-    [Button]
-    private void StopSimulation() => _isSimStarted = false;
 
     [Button]
     private void RandomizeAndStart()

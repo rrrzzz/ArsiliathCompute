@@ -4,6 +4,13 @@ using Random = UnityEngine.Random;
 public static class Utils
 {
     private static int s_ID_MainTex = Shader.PropertyToID("_UnlitColorMap");
+
+    public static void SwapTextures(ref RenderTexture first, ref RenderTexture second)
+    {
+        var tmp = first;
+        first = second;
+        second = tmp;
+    }
     
     public static void SetVizTexture(RenderTexture tex, Material mat)
     {
@@ -19,7 +26,7 @@ public static class Utils
         {
             useMipMap = false,
             enableRandomWrite = true, 
-            filterMode = FilterMode.Point, 
+            filterMode = FilterMode.Trilinear, 
             wrapMode = TextureWrapMode.Repeat
         };
 
