@@ -26,7 +26,7 @@ public static class Utils
         {
             useMipMap = false,
             enableRandomWrite = true, 
-            filterMode = FilterMode.Trilinear, 
+            filterMode = FilterMode.Point, 
             wrapMode = TextureWrapMode.Repeat
         };
 

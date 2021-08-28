@@ -171,11 +171,12 @@ MonoBehaviour:
   resolution: 1024
   stepsPerFrame: 0
   stepInterval: 0
-  agentCount: 512000
-  range: 10
-  dirThreshold: 0.107
-  trailDeposit: 0.3
-  trailDecayFactor: 0.954
+  agentCount: 1000000
+  range: 1
+  diffuseRange: 1
+  dirThreshold: 0.204
+  trailDeposit: 0.1
+  trailDecayFactor: 0.9
   isSimulating: 0
 --- !u!1 &830522509
 GameObject:

@@ -12,6 +12,7 @@ namespace Week3Agents
         [SerializeField] private int stepInterval;
         [SerializeField] private int agentCount;
         [SerializeField] private int range;
+        [SerializeField] private int diffuseRange = 1;
         [SerializeField, Range(-1, 1)] private float dirThreshold = 0.1f;
         [SerializeField, Range(0, 1)] private float trailDeposit = 0.1f;
         [SerializeField, Range(0, 1)] private float trailDecayFactor = 0.1f;
@@ -22,6 +23,7 @@ namespace Week3Agents
         private int _resetTextureKernelId;
         private int _resetAgentsKernelId;
         private int _trailKernelId;
+        private int _diffuseKernelId;
         private int _resDiv;
         private int _agentsDiv;
     
@@ -47,6 +49,7 @@ namespace Week3Agents
             _resetAgentsKernelId = cs.FindKernel("ResetAgents");
             _simulateKernelId = cs.FindKernel("Simulate");
             _trailKernelId = cs.FindKernel("MakeTrail");
+            _diffuseKernelId = cs.FindKernel("DiffuseTexture");
         }
         
         [Button]
@@ -78,14 +81,12 @@ namespace Week3Agents
             cs.Dispatch(_resetAgentsKernelId, _agentsDiv, 1, 1);
 
             cs.SetBuffer(_simulateKernelId, "_Agents", _agentsBuffer);
-            cs.SetTexture(_simulateKernelId,"_WriteTex", _writeTex);
             cs.SetTexture(_simulateKernelId, "_ReadTex", _stigmergyTex);
             
             cs.SetTexture(_renderKernelId, "_VizTex", _vizTex);
-            cs.SetTexture(_renderKernelId,"_WriteTex", _writeTex);
             cs.SetTexture(_renderKernelId,"_StigmergyTex", _stigmergyTex);
             
-            cs.SetTexture(_trailKernelId, "_WriteTex", _writeTex);
+            cs.SetBuffer(_trailKernelId, "_Agents", _agentsBuffer);
             cs.SetTexture(_trailKernelId, "_StigmergyTex", _stigmergyTex);
         }
 
@@ -96,6 +97,7 @@ namespace Week3Agents
             cs.SetFloat("_TrailDeposit", trailDeposit);
             cs.SetFloat("_TrailDecay", trailDecayFactor);
             cs.SetInt("_Range", range);
+            cs.SetInt("_DiffuseRange", diffuseRange);
         }
         
         private void CreateTextures()
@@ -122,13 +124,19 @@ namespace Week3Agents
         {
             cs.SetFloat("_Time", TimeSeed);
             
+            cs.SetTexture(_simulateKernelId, "_ReadTex", _stigmergyTex);
             cs.Dispatch(_simulateKernelId, _agentsDiv, 1, 1);
-           
-            cs.Dispatch(_trailKernelId, _resDiv, _resDiv, 1);
+            
+            cs.SetTexture(_diffuseKernelId, "_ReadTex", _readTex);
+            cs.SetTexture(_diffuseKernelId, "_StigmergyTex", _stigmergyTex);
+            cs.Dispatch(_diffuseKernelId, _resDiv, _resDiv, 1);
+
+            cs.SetTexture(_trailKernelId, "_StigmergyTex", _stigmergyTex);
+            cs.Dispatch(_trailKernelId, _agentsDiv, 1, 1);
+            
+            Utils.SwapTextures(ref _readTex, ref _stigmergyTex);
             
             Render();
-            
-            cs.Dispatch(_resetTextureKernelId, _resDiv, _resDiv, 1);
         }
 
         private void Render()
