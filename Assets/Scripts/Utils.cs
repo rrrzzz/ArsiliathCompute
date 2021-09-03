@@ -27,7 +27,8 @@ public static class Utils
             useMipMap = false,
             enableRandomWrite = true, 
             filterMode = FilterMode.Point, 
-            wrapMode = TextureWrapMode.Repeat
+            wrapMode = TextureWrapMode.Repeat,
+            autoGenerateMips = false
         };
 
         tex.Create();

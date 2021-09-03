@@ -1,4 +1,5 @@
-#pragma kernel Render
+#pragma kernel RenderTrail
+#pragma kernel RenderAgents
 #pragma kernel Simulate
 #pragma kernel ResetTexture
 #pragma kernel ResetAgents
@@ -23,85 +24,20 @@ struct Agent
 RWStructuredBuffer<Agent> _Agents;
 
 int _Rez, _AgentCount, _Range, _DiffuseRange;
-float _Time, _DirThreshold, _TrailDeposit, _TrailDecay;
+
+float _Time, _DirThreshold, _TrailDeposit, _TrailDecay, _BrushStrength, _BrushSize;
+float2 _BrushPos;
 
 float2 GetRandomPos(float x)
 {
     return Random(float2(_Time * 0.001, x * 0.1 / _Time)) * (_Rez - 1);
+    //return Random(x * .0001 + _Time * .001) * _Rez;
 }
 
 float2 GetRandomDir(float2 id)
 {
-    float2 rnd = Random(id.xx * 0.1 + sin(_Time));
+    float2 rnd = Random(id.xx * 0.001 + sin(_Time));
     return normalize(2 * rnd - 1);    
-}
-
-[numthreads(32,32,1)]
-void Render (uint3 id : SV_DispatchThreadID)
-{
-    
-    float trailVal = _StigmergyTex[id.xy];
-    _VizTex[id.xy] = float4(trailVal, trailVal, trailVal, 1);    
-}
-
-[numthreads(64,1,1)]
-void MakeTrail (uint3 id : SV_DispatchThreadID)
-{
-    float2 pos = _Agents[id.x].pos;
-    pos = round(pos) % _Rez;
-    _StigmergyTex[pos] = saturate(_StigmergyTex[pos] + _TrailDeposit);    
-}
-
-[numthreads(64,1,1)]
-void Simulate (uint3 id : SV_DispatchThreadID)
-{    
-    Agent a = _Agents[id.x];
-    float2 vectors[100];
-    int i = 0;
-    float maxVal = 0;
-    
-    for (int x = -_Range; x <= _Range; x++)
-    {
-        for (int y = -_Range; y <= _Range; y++)
-        {
-            if (x == 0 && y == 0)
-                continue;
-
-            float2 currentPos = a.pos + int2(x, y);
-            float2 currentDir = normalize(currentPos - a.pos);
-
-            if (dot(currentDir, a.dir) <= _DirThreshold)
-            continue;
-            
-            float currentVal = _ReadTex.SampleLevel(sampler__ReadTex, round(currentPos) / _Rez, 0);
-
-            if (currentVal > maxVal)
-            {
-                vectors[i++] = currentDir;
-                maxVal = currentVal;
-            }
-        }
-    }
-
-    if (maxVal >= 0.1)
-    {
-        int idx = (i - 1) * Random(id.xx * 0.1 + sin(_Time)).x;
-        a.dir += vectors[idx];
-    }
-    // else
-    // {
-    //     a.dir += GetRandomDir(id.xy);
-    // }
-        
-    a.pos += normalize(a.dir);
-    
-    if(a.pos.x < 0)
-        a.pos.x += _Rez;
-    if(a.pos.y < 0)
-        a.pos.y += _Rez;
-    
-    a.pos %= _Rez;  
-    _Agents[id.x] = a;
 }
 
 [numthreads(32,32,1)]
@@ -120,6 +56,97 @@ void ResetAgents (uint3 id : SV_DispatchThreadID)
     _Agents[id.x] = currentAgent;
 }
 
+[numthreads(64,1,1)]
+void MakeTrail (uint3 id : SV_DispatchThreadID)
+{    
+    float2 pos = _Agents[id.x].pos;
+    int2 texCoord = round(pos) % _Rez;
+    _StigmergyTex[texCoord] = saturate(_StigmergyTex[texCoord] + _TrailDeposit);         
+}
+
+[numthreads(64,1,1)]
+void Simulate (uint3 id : SV_DispatchThreadID)
+{    
+    Agent a = _Agents[id.x];
+    float2 vectors[100];
+    int i = 0;
+    float maxVal = 0;
+    
+    for (int x = -_Range; x <= _Range; x++)
+    {
+        for (int y = -_Range; y <= _Range; y++)
+        {
+            if (x == 0 && y == 0)
+                continue;
+
+            float2 currentPos = a.pos + int2(x, y);
+            float2 dir = normalize(float2(x, y));
+
+            if (dot(dir, a.dir) <= _DirThreshold)
+                continue;
+            
+            float currentVal = _ReadTex.SampleLevel(sampler__ReadTex, round(currentPos) / _Rez, 0);
+
+            if (currentVal == maxVal)
+            {
+                vectors[i++] = dir;
+            }
+            if (currentVal > maxVal)
+            {
+                i = 0;
+                vectors[i++] = dir;
+                maxVal = currentVal;
+            }
+        }
+    }
+
+    if (maxVal >= 0.1)
+    {
+        int idx = (i - 1) * round(Random(id.xx * 0.1 + sin(_Time)).x);
+        a.dir = vectors[idx];
+    }
+    else
+    {
+        a.dir = GetRandomDir(id.xy);
+    }
+
+    a.pos += a.dir;
+    
+    if(a.pos.x < 0)
+        a.pos.x += _Rez;
+    if(a.pos.y < 0)
+        a.pos.y += _Rez;
+    
+    a.pos %= _Rez;
+    
+    _Agents[id.x] = a;    
+}
+
+
+[numthreads(32,32,1)]
+void RenderTrail(uint3 id : SV_DispatchThreadID)
+{
+    float trailVal = _StigmergyTex[id.xy];
+    float4 col = _VizTex[id.xy];
+    col.yz = trailVal;
+    _VizTex[id.xy] = col;    
+}
+
+[numthreads(64,1,1)]
+void RenderAgents(uint3 id : SV_DispatchThreadID)
+{
+    float4 col; 
+    
+    float2 pos = _Agents[id.x].pos;
+    int2 texCoord = round(pos) % _Rez;
+    col = _VizTex[texCoord];    
+    
+    col.x += 0.8;    
+    
+    _VizTex[texCoord] = col;
+}
+
+
 [numthreads(32,32,1)]
 void DiffuseTexture (uint3 id : SV_DispatchThreadID)
 {
@@ -137,5 +164,12 @@ void DiffuseTexture (uint3 id : SV_DispatchThreadID)
     avg /= sampledCellsCount * sampledCellsCount;
     
     avg *= _TrailDecay;
-    _StigmergyTex[id.xy] = saturate(avg);
+
+    if (_BrushPos.x != 0 && _BrushPos.y != 0 && distance(_BrushPos, id.xy) <= _BrushSize)
+    {
+        avg += _BrushStrength;
+    }
+
+    avg = saturate(avg);
+    _StigmergyTex[id.xy] = avg;
 }

@@ -214,7 +214,7 @@ void DiffuseTextureKernel(uint3 id : SV_DispatchThreadID)
 void RenderKernel(uint3 id : SV_DispatchThreadID)
 {
 	outTex[id.xy] = readTex[id.xy];
-	outTex[id.xy] += debugTex[id.xy];
+	//outTex[id.xy] += debugTex[id.xy];
 	debugTex[id.xy] = 0;
 }
 

@@ -220,8 +220,7 @@ public class TrailAgent : MonoBehaviour
     private void Render()
     {
         GPURenderKernel();
-        GPUAgentsDebugKernel();
-
+      
         outMat.SetTexture("_UnlitColorMap", outTex);
         if (!Application.isPlaying)
         {
