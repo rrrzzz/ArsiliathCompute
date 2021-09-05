@@ -28,18 +28,6 @@ int _Rez, _AgentCount, _Range, _DiffuseRange;
 float _Time, _DirThreshold, _TrailDeposit, _TrailDecay, _BrushStrength, _BrushSize;
 float2 _BrushPos;
 
-float2 GetRandomPos(float x)
-{
-    return Random(float2(_Time * 0.001, x * 0.1 / _Time)) * (_Rez - 1);
-    //return Random(x * .0001 + _Time * .001) * _Rez;
-}
-
-float2 GetRandomDir(float2 id)
-{
-    float2 rnd = Random(id.xx * 0.001 + sin(_Time));
-    return normalize(2 * rnd - 1);    
-}
-
 [numthreads(32,32,1)]
 void ResetTexture (uint3 id : SV_DispatchThreadID)
 {    
@@ -50,8 +38,8 @@ void ResetTexture (uint3 id : SV_DispatchThreadID)
 void ResetAgents (uint3 id : SV_DispatchThreadID)
 {
     Agent currentAgent;
-    currentAgent.dir = GetRandomDir(id.x);
-    currentAgent.pos = GetRandomPos(id.x);
+    currentAgent.dir = GetRandomDir(id.x, _Time);
+    currentAgent.pos = GetRandomPos(id.x, _Time, _Rez);
 
     _Agents[id.x] = currentAgent;
 }
@@ -103,11 +91,11 @@ void Simulate (uint3 id : SV_DispatchThreadID)
     if (maxVal >= 0.1)
     {
         int idx = (i - 1) * round(Random(id.xx * 0.1 + sin(_Time)).x);
-        a.dir = vectors[idx];
+        a.dir = vectors[idx] * 6; // * 4, 5, 6, default sim settings to get lines effect 
     }
     else
     {
-        a.dir = GetRandomDir(id.xy);
+        a.dir = GetRandomDir(id.xy, _Time);
     }
 
     a.pos += a.dir;
@@ -116,7 +104,7 @@ void Simulate (uint3 id : SV_DispatchThreadID)
         a.pos.x += _Rez;
     if(a.pos.y < 0)
         a.pos.y += _Rez;
-    
+
     a.pos %= _Rez;
     
     _Agents[id.x] = a;    

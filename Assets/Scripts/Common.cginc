@@ -39,3 +39,14 @@ float RandomHash(uint seed)
 {
     return float(Hash(seed)) / 4294967295.0; // 2^32-1
 }
+
+float2 GetRandomPos(float x, float seed, int resolution)
+{
+    return Random(float2(seed * 0.001, x * 0.1 / seed)) * (resolution - 1);    
+}
+
+float2 GetRandomDir(float2 id, float seed)
+{
+    float2 rnd = Random(id.xx * 0.001 + sin(seed));
+    return normalize(2 * rnd - 1);    
+}
