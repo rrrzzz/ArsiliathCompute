@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EasyButtons;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -10,21 +11,29 @@ public class BoidsController : MonoBehaviour
     [SerializeField] private int boidsCount;
     [SerializeField] private int resolution = 15;
     [SerializeField] private bool cohesionOn;
+    [SerializeField, Range(0,1)] private float cohesionStrength;
     [SerializeField] private bool avoidanceOn;
+    [SerializeField, Range(0,1)] private float avoidanceStrength;
     [SerializeField] private bool steeringOn;
+    [SerializeField, Range(0,1)] private float steeringStrength;
     [SerializeField] private bool wanderingOn;
-    [SerializeField, Range(0, 1)] private float visionRangePercentage;
     [SerializeField] private float speed = 1;
     [SerializeField] private int frameInterval = 1;
     [SerializeField] private float boundsDistance = .1f;
     [SerializeField] private float _visionAngle = .1f;
+    [SerializeField] private float _visionRange;
     
     [SerializeField] private GameObject boidPrefab;
-    
+
     private List<Boid> _boids = new List<Boid>();
     private Boid[] _boidsNewDir;
-    private float _visionRange;
+    
+    public static Vector2 Vec3ToPos(Vector3 posIn) => new Vector2(posIn.z, posIn.y);
+    public static Vector2 Vec3ToDir(Vector3 dirIn) => new Vector2(dirIn.z, dirIn.y);
 
+    public static Vector3 PosToVec3(Vector2 posIn) => new Vector3(0, posIn.y, posIn.x);
+    public static Vector3 DirToVec3(Vector2 dirIn) => new Vector3(0, dirIn.y, dirIn.x);
+    
     private void Start()
     {
         ResetSim();
@@ -33,13 +42,17 @@ public class BoidsController : MonoBehaviour
     [Button]
     private void ResetSim()
     {
-        _visionRange = resolution * visionRangePercentage;
+        if (_boids.Count > boidsCount)
+        {
+            for (int i = boidsCount; i < _boids.Count; i++)
+                Destroy(_boids[i].Go);
+            
+            _boids = _boids.Take(boidsCount).ToList();
+        }
         
         for (int i = 0; i < boidsCount; i++)
-        {
             CreateBoid(i);
-        }
-
+        
         _boidsNewDir = new Boid[boidsCount];
     }
 
@@ -47,7 +60,7 @@ public class BoidsController : MonoBehaviour
     {
         // if (Time.frameCount % frameInterval != 0)
         //     return;
-        
+
         if (!Input.GetKey(KeyCode.Space)) return;
         
         for (int i = 0; i < _boids.Count; i++)
@@ -57,7 +70,7 @@ public class BoidsController : MonoBehaviour
 
             if (neighbours.Count != 0)
             {
-                var newDir = GetAvoidDir(neighbours, boid);
+                var newDir = GetInteractionResultDir(neighbours, boid);
                 boid.Dir = newDir;
             }
             
@@ -71,28 +84,31 @@ public class BoidsController : MonoBehaviour
         }
     }
     
-    public static Vector2 Vec3ToPos(Vector3 posIn) => new Vector2(posIn.z, posIn.y);
-    public static Vector2 Vec3ToDir(Vector3 dirIn) => new Vector2(dirIn.z, dirIn.y);
-
-    public static Vector3 PosToVec3(Vector2 posIn) => new Vector3(0, posIn.y, posIn.x);
-    public static Vector3 DirToVec3(Vector2 dirIn) => new Vector3(0, dirIn.y, dirIn.x);
-
-
-    private Vector2 GetAvoidDir(List<Boid> neighbours, Boid currentBoid)
+    private Vector2 GetInteractionResultDir(List<Boid> neighbours, Boid currentBoid)
     {
         var avoidDir = Vector2.zero;
+        var steerDir = Vector2.zero;
 
         foreach (var boid in neighbours)
         {
             avoidDir += currentBoid.Pos - boid.Pos;
+            steerDir += boid.Dir;
         }
 
-        avoidDir /= neighbours.Count;
         avoidDir.Normalize();
-        
-        return avoidDir;
+        steerDir.Normalize();
+
+        Vector2 outDir = Vector2.zero;
+        if (cohesionOn)
+            outDir = Vector2.Lerp(currentBoid.Dir, -avoidDir, cohesionStrength);
+        if (avoidanceOn)
+            outDir += Vector2.Lerp(currentBoid.Dir, avoidDir, avoidanceStrength);
+        if (steeringOn)
+            outDir += Vector2.Lerp(currentBoid.Dir, steerDir, steeringStrength);
+
+        return outDir == Vector2.zero ? currentBoid.Dir : outDir.normalized;
     }
-    
+
     private List<Boid> GetNeighbours(Boid boid)
     {
         var neighbours = new List<Boid>();
@@ -124,7 +140,7 @@ public class BoidsController : MonoBehaviour
         if (idx >= _boids.Count)
         {
             var boid = Instantiate(boidPrefab, GetRandomPos(), GetRandomRot());
-            boid.name = "Boid" + idx;
+            boid.name = "Boid " + idx;
             _boids.Add(new Boid(boid.transform.position, boid.transform.forward, speed, boid));
             return;
         }
@@ -149,13 +165,14 @@ public class BoidsController : MonoBehaviour
 
     private Boid MoveBoid(Boid boid)
     {
+        if (Mathf.Abs(boid.Pos.x) >= resolution - boundsDistance)
+            boid.Dir.x = Mathf.Sign(boid.Pos.x) == Mathf.Sign(boid.Dir.x) ? -boid.Dir.x : boid.Dir.x;
+       
+        if (Mathf.Abs(boid.Pos.y) >= resolution - boundsDistance)
+            boid.Dir.y = Mathf.Sign(boid.Pos.y) == Mathf.Sign(boid.Dir.y) ? -boid.Dir.y : boid.Dir.y;
+        
         boid.Pos += boid.Dir * boid.Spd;
         boid.Go.transform.position = PosToVec3(boid.Pos);
-        if (Mathf.Abs(boid.Pos.x) >= resolution - boundsDistance)
-            boid.Dir.x = -boid.Dir.x;
-        
-        if (Mathf.Abs(boid.Pos.y) >= resolution - boundsDistance)
-            boid.Dir.y = -boid.Dir.y;
 
         boid.Go.transform.rotation = Quaternion.LookRotation(DirToVec3(boid.Dir), boid.Go.transform.up);
         return boid;

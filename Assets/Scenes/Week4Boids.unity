@@ -149,13 +149,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 374115497}
-  m_LocalRotation: {x: 0.030213889, y: -0.70899683, z: 0.030433204, w: 0.70390654}
-  m_LocalPosition: {x: 30, y: 2.0543485, z: -0.22059365}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 87.96, y: 0.2, z: -0.22059365}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1295116373}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!114 &374115499
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -411,17 +411,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2ae8202b76fc2b4cb2f1e978641201e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidsCount: 2
-  resolution: 15
+  boidsCount: 50
+  resolution: 50
   cohesionOn: 0
+  cohesionStrength: 0
   avoidanceOn: 0
-  steeringOn: 0
+  avoidanceStrength: 0.505
+  steeringOn: 1
+  steeringStrength: 0.22
   wanderingOn: 0
-  visionRangePercentage: 0.1
-  speed: 1
+  speed: 0.5
   frameInterval: 1
   boundsDistance: 1
-  _visionAngle: 0.1
+  _visionAngle: 0.4
+  _visionRange: 5
   boidPrefab: {fileID: 8098667694716440241, guid: 80ddb54c74612c54da88fcf57aff9300, type: 3}
 --- !u!4 &765386457
 Transform:
@@ -744,7 +747,7 @@ Transform:
   m_GameObject: {fileID: 1256745643}
   m_LocalRotation: {x: -0, y: -0, z: -0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 11.012999, y: 11.012999, z: 3.9}
+  m_LocalScale: {x: 10, y: 10, z: 10}
   m_Children: []
   m_Father: {fileID: 1295116373}
   m_RootOrder: 1
