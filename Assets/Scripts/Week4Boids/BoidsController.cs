@@ -20,8 +20,9 @@ public class BoidsController : MonoBehaviour
     [SerializeField] private float speed = 1;
     [SerializeField] private int frameInterval = 1;
     [SerializeField] private float boundsDistance = .1f;
-    [SerializeField] private float _visionAngle = .1f;
-    [SerializeField] private float _visionRange;
+    [SerializeField] private float visionAngle = .1f;
+    [SerializeField] private float wanderingAngle = 0.9f;
+    [SerializeField] private float visionRange;
     
     [SerializeField] private GameObject boidPrefab;
 
@@ -120,10 +121,10 @@ public class BoidsController : MonoBehaviour
 
             var toNeighbour = b.Pos - boid.Pos;
 
-            if (toNeighbour.magnitude > _visionRange)
+            if (toNeighbour.magnitude > visionRange)
                 continue;
 
-            if (Vector2.Dot(toNeighbour, boid.Dir) <= _visionAngle)
+            if (Vector2.Dot(toNeighbour, boid.Dir) <= visionAngle)
                 continue;
 
             neighbours.Add(b);
@@ -165,10 +166,27 @@ public class BoidsController : MonoBehaviour
 
     private Boid MoveBoid(Boid boid)
     {
-        if (Mathf.Abs(boid.Pos.x) >= resolution - boundsDistance)
+        if (wanderingOn)
+        {
+            var degrees = (1 - wanderingAngle) * 90;
+            degrees *= Mathf.Deg2Rad;
+
+            degrees = Mathf.Lerp(-degrees, degrees, Random.Range(0, 1f));
+            var sinPos = Mathf.Sin(degrees);
+            var cosPos = Mathf.Cos(degrees);
+
+            var newDir = new Vector2(boid.Dir.x * cosPos - boid.Dir.y * sinPos,
+                boid.Dir.x * sinPos + boid.Dir.y * cosPos);
+           
+            boid.Dir = newDir;
+        }
+        
+        var newPos = boid.Pos + boid.Dir * boid.Spd;
+        
+        if (Mathf.Abs(newPos.x) >= resolution - boundsDistance)
             boid.Dir.x = Mathf.Sign(boid.Pos.x) == Mathf.Sign(boid.Dir.x) ? -boid.Dir.x : boid.Dir.x;
        
-        if (Mathf.Abs(boid.Pos.y) >= resolution - boundsDistance)
+        if (Mathf.Abs(newPos.y) >= resolution - boundsDistance)
             boid.Dir.y = Mathf.Sign(boid.Pos.y) == Mathf.Sign(boid.Dir.y) ? -boid.Dir.y : boid.Dir.y;
         
         boid.Pos += boid.Dir * boid.Spd;

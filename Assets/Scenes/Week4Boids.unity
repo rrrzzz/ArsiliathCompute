@@ -411,20 +411,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2ae8202b76fc2b4cb2f1e978641201e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidsCount: 50
+  boidsCount: 100
   resolution: 50
-  cohesionOn: 0
-  cohesionStrength: 0
-  avoidanceOn: 0
+  cohesionOn: 1
+  cohesionStrength: 0.21
+  avoidanceOn: 1
   avoidanceStrength: 0.505
   steeringOn: 1
   steeringStrength: 0.22
-  wanderingOn: 0
+  wanderingOn: 1
   speed: 0.5
   frameInterval: 1
   boundsDistance: 1
-  _visionAngle: 0.4
-  _visionRange: 5
+  visionAngle: 0.7
+  wanderingAngle: 0.9
+  visionRange: 5
   boidPrefab: {fileID: 8098667694716440241, guid: 80ddb54c74612c54da88fcf57aff9300, type: 3}
 --- !u!4 &765386457
 Transform:
