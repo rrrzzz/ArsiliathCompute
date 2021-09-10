@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using EasyButtons;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class BoidsController : MonoBehaviour
+public class BoidsControllerCpu : MonoBehaviour
 {
     // [SerializeField] private ComputeShader cs;
     [SerializeField] private int boidsCount;
@@ -18,7 +17,6 @@ public class BoidsController : MonoBehaviour
     [SerializeField, Range(0,1)] private float steeringStrength;
     [SerializeField] private bool wanderingOn;
     [SerializeField] private float speed = 1;
-    [SerializeField] private int frameInterval = 1;
     [SerializeField] private float boundsDistance = .1f;
     [SerializeField] private float visionAngle = .1f;
     [SerializeField] private float wanderingAngle = 0.9f;
@@ -201,8 +199,8 @@ public struct Boid
 {
     public Boid(Vector3 pos, Vector3 dir, float spd, GameObject go)
     {
-        Pos = BoidsController.Vec3ToPos(pos);
-        Dir = BoidsController.Vec3ToDir(dir);
+        Pos = BoidsControllerCpu.Vec3ToPos(pos);
+        Dir = BoidsControllerCpu.Vec3ToDir(dir);
         Spd = spd;
         Go = go;
     }

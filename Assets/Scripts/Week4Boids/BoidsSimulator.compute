@@ -1,9 +1,207 @@
-#pragma kernel CSMain
+#pragma enable_d3d11_debug_symbols
+#pragma kernel ResetKernel
+#pragma kernel ResetTextureKernel
+#pragma kernel SimulateKernel
+#pragma kernel RenderKernel
 
-RWTexture2D<float4> Result;
+#include "../Common.cginc"
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
-{    
+RWTexture2D<float4> _VizTex, _DebugTex, _WriteTex;
+Texture2D<float4> _ReadTex;
+
+SamplerState sampler__ReadTex;
+
+int _Rez, _BoidCount, _VisionRange;
+bool _CohesionOn, _AvoidanceOn, _SteeringOn, _WanderingOn;
+float _CohesionStrength, _AvoidanceStrength, _SteeringStrength, _VisionAngle, _WanderingAngle, _Speed, _Seed; 
+
+struct Boid
+{
+    float2 dir;
+    float2 pos;    
+};
+
+StructuredBuffer<Boid> _BoidReadBuffer;
+RWStructuredBuffer<Boid> _BoidWriteBuffer;
+RWStructuredBuffer<float4> _DebugBuffer;
+
+float2 GetNewDir(int idx, Boid b)
+{
+    float2 steeringDir = float2(0,0);
+    float2 cohesionDir = float2(0,0);
+    float2 outDir = float2(0,0);
     
+    bool isNeighbourFound = false;
+    
+    for (int i = 0; i < _BoidCount; i++)
+    {
+        if (i == idx)
+            continue;
+
+        Boid currentBoid = _BoidReadBuffer[i];
+        float2 toNeighbour = currentBoid.pos - b.pos;
+
+        if (length(toNeighbour) > _VisionRange || dot(toNeighbour, b.dir) < _VisionAngle)
+            continue;
+
+        isNeighbourFound = true;
+        cohesionDir += toNeighbour;
+        steeringDir += currentBoid.dir;        
+    }
+
+    if (isNeighbourFound)
+    {
+        cohesionDir = normalize(cohesionDir);
+        steeringDir = normalize(steeringDir);
+    
+        if (_CohesionOn)
+            outDir += lerp(b.dir, cohesionDir, _CohesionStrength);
+        if (_SteeringOn)
+            outDir += lerp(b.dir, steeringDir, _SteeringStrength);
+        if (_AvoidanceOn)
+            outDir += lerp(b.dir, -cohesionDir, _AvoidanceStrength);
+    }    
+
+    outDir = outDir == float2(0,0) ? b.dir : normalize(outDir);
+
+    if (_WanderingOn)
+    {
+        float rnd = Random(idx.xx * 0.001 + sin(_Seed)).x;
+        rnd = rnd * 2 - 1;
+        float degrees = rnd * _WanderingAngle;
+        float sinD = sin(degrees);
+        float cosD = cos(degrees);
+        outDir = float2(outDir.x * cosD - outDir.y * sinD, outDir.x * sinD + outDir.y * cosD); 
+    }
+
+    return outDir;
+}
+
+float2 GetNewDirFast(int idx, Boid b)
+{
+    float2 steeringDir = float2(0,0);
+    float2 cohesionDir = float2(0,0);
+    float2 outDir = float2(0,0);
+    bool isNeighbourFound = false;
+    
+    for (int x = -_VisionRange; x <= _VisionRange; x++)
+    {
+        for (int y = -_VisionRange; y <= _VisionRange; y++)
+        {
+            if (x == 0 && y == 0)
+                continue;
+
+            float2 currentPos = b.pos + int2(x, y);  
+            float2 dir = normalize(float2(x, y));
+
+            if (dot(dir, b.dir) <= _VisionAngle)
+                continue;
+            
+            float4 currentVal = _ReadTex.SampleLevel(sampler__ReadTex, round(currentPos) / _Rez, 0);
+
+            if (currentVal.x == 0)
+                continue;
+
+            isNeighbourFound = true;
+            float2 toNeighbour = currentPos - b.pos;
+
+            cohesionDir += toNeighbour;
+      
+            steeringDir += float2(currentVal.y, currentVal.z);
+            //
+            // float dirX = currentVal.x > 0.5 ? currentVal.y : -currentVal.y;
+            // float dirY = currentVal.w > 0.5 ? currentVal.z : -currentVal.z;
+            //
+            // steeringDir += float2(dirX, dirY); 
+        }
+    }
+
+    if (isNeighbourFound)
+    {
+        cohesionDir = normalize(cohesionDir);
+        steeringDir = normalize(steeringDir);
+    
+        if (_CohesionOn)
+            outDir += lerp(b.dir, cohesionDir, _CohesionStrength);
+        if (_SteeringOn)
+            outDir += lerp(b.dir, steeringDir, _SteeringStrength);
+        if (_AvoidanceOn)
+            outDir += lerp(b.dir, -cohesionDir, _AvoidanceStrength);
+    }    
+
+    outDir = outDir == float2(0,0) ? b.dir : normalize(outDir);
+
+    if (_WanderingOn)
+    {
+        float rnd = Random(idx.xx * 0.001 + sin(_Seed)).x;
+        rnd = rnd * 2 - 1;
+        float degrees = rnd * _WanderingAngle;
+        float sinD = sin(degrees);
+        float cosD = cos(degrees);
+        outDir = float2(outDir.x * cosD - outDir.y * sinD, outDir.x * sinD + outDir.y * cosD); 
+    }
+
+    return outDir;
+}
+
+[numthreads(1,1,1)]
+void SimulateKernel (uint3 id : SV_DispatchThreadID)
+{    
+    Boid b = _BoidReadBuffer[id.x];
+    
+    float2 newDir = GetNewDirFast(id.x, b);    
+    float2 newPos = b.pos + newDir * _Speed;
+    
+    if (newPos.x < 0 || newPos.x >= _Rez)
+        newDir.x = -newDir.x;
+    
+    if (newPos.y < 0 || newPos.y >= _Rez)
+        newDir.y = -newDir.y;
+
+    // float2 newPos = b.pos + b.dir * _Speed;
+    //
+    // if (newPos.x < 0 || newPos.x >= _Rez)
+    //     b.dir.x = -b.dir.x;
+    //
+    // if (newPos.y < 0 || newPos.y >= _Rez)
+    //     b.dir.y = -b.dir.y;
+
+    b.dir = newDir;
+    
+    b.pos += b.dir * _Speed;    
+    _BoidWriteBuffer[id.x] = b;
+    
+    float xSign = b.dir.x >= 0 ? 0.75 : 0.25;
+    float ySign = b.dir.y >= 0 ? 0.75 : 0.25;
+    
+    // _WriteTex[(int2)b.pos] = float4(xSign, b.dir.x, b.dir.y, ySign);
+    _WriteTex[(int2)b.pos] = float4(1, b.dir.x, b.dir.y, 0);
+}
+
+[numthreads(1,1,1)]
+void ResetKernel (uint3 id : SV_DispatchThreadID)
+{
+    Boid b;
+    b.dir = GetRandomDir(id.xy, _Seed);
+    b.pos = GetRandomPos(id.x, _Seed, _Rez);
+    _BoidWriteBuffer[id.x] = b;
+    
+    float xSign = b.dir.x >= 0 ? 0.75 : 0.25;
+    float ySign = b.dir.y >= 0 ? 0.75 : 0.25;
+    
+    _WriteTex[(int2)b.pos] = float4(1, b.dir.x, b.dir.y, 0);
+    // _WriteTex[(int2)b.pos] = float4(xSign, b.dir.x, b.dir.y, ySign);
+}
+
+[numthreads(1,1,1)]
+void RenderKernel (uint3 id : SV_DispatchThreadID)
+{
+    Boid b = _BoidReadBuffer[id.x];
+    _VizTex[(int2)b.pos] = float4(0, 1, 1, 1);    
+}
+
+[numthreads(1,1,1)]
+void ResetTextureKernel (uint3 id : SV_DispatchThreadID)
+{
+    _VizTex[id.xy] = 0;       
 }
