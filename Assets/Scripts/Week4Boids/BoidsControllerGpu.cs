@@ -9,7 +9,6 @@ namespace Week4Boids
         [SerializeField] private ComputeShader cs;
         [SerializeField] private Material renderMat;
         [SerializeField] private Material debugMat;
-    
         [SerializeField] private int boidCount;
         [SerializeField] private int resolution = 16;
         [SerializeField] private bool cohesionOn;
@@ -61,6 +60,7 @@ namespace Week4Boids
             _boidCountDiv = boidCount / 64;
 
             _resDiv = resolution;
+            _resDiv = resolution / 32;
             
             _renderTex = Utils.CreateTexture(_renderTex, RenderTextureFormat.ARGB32, resolution);
             _debugTex = Utils.CreateTexture(_debugTex, RenderTextureFormat.ARGB32, resolution);
@@ -68,14 +68,13 @@ namespace Week4Boids
             _writeTex = Utils.CreateTexture(_debugTex, RenderTextureFormat.ARGB32, resolution);
         
             Utils.SetVizTexture(_renderTex, renderMat);
+            Utils.SetVizTexture(_debugTex, debugMat);
         
             _boidReadBuffer?.Release();
             _boidWriteBuffer?.Release();
-            _debugBuffer?.Release();
 
             _boidReadBuffer = new ComputeBuffer(boidCount, sizeof(float) * 4);
             _boidWriteBuffer = new ComputeBuffer(boidCount, sizeof(float) * 4);
-            _debugBuffer = new ComputeBuffer(boidCount, sizeof(float) * 4);
         
             cs.SetTexture(_renderKernel, "_VizTex", _renderTex);
 
@@ -84,8 +83,11 @@ namespace Week4Boids
         
             cs.SetBuffer(_resetKernel, "_BoidWriteBuffer", _boidReadBuffer);
             cs.SetTexture(_resetKernel, "_WriteTex", _readTex);
+            cs.SetTexture(_resetKernel, "_DebugTex", _debugTex);
             cs.Dispatch(_resetKernel, _boidCountDiv, 1, 1);
-        
+
+            cs.SetTexture(_simulateKernel, "_DebugTex", _debugTex);
+
             ApplyParams();
         }
 
@@ -124,13 +126,12 @@ namespace Week4Boids
             if (Time.frameCount % frameInterval != 0)
                 return;
             
-            cs.SetFloat("_Seed", Time.frameCount);
+
             // if (!Input.GetKeyDown(KeyCode.Space)) return;
             
+            cs.SetFloat("_Seed", Time.frameCount);
             cs.SetTexture(_resetTextureKernel, "_VizTex", _renderTex);
             cs.Dispatch(_resetTextureKernel, _resDiv, _resDiv, 1);
-            
-            
 
             cs.SetBuffer(_simulateKernel, "_BoidReadBuffer", _boidReadBuffer);
             cs.SetBuffer(_simulateKernel, "_BoidWriteBuffer", _boidWriteBuffer);
@@ -138,11 +139,21 @@ namespace Week4Boids
             cs.SetTexture(_simulateKernel, "_ReadTex", _readTex);
 
             cs.Dispatch(_simulateKernel, _boidCountDiv, 1, 1);
+
+            // var output = new Vector4[boidCount];
+            //
+            // _debugBuffer.GetData(output);
+            //
+            // for (int i = 0; i < boidCount; i++)
+            // {
+            //     var b = output[i];
+            //     Debug.Log($"Boid {i} pos: ({b.x}, {b.y}). Dir: ({b.z}, {b.w})");
+            // }
             
             cs.SetBuffer(_renderKernel, "_BoidReadBuffer", _boidWriteBuffer);
             cs.Dispatch(_renderKernel, _boidCountDiv, 1, 1);
-            // cs.SetTexture(_resetTextureKernel, "_VizTex", _readTex);
-            // cs.Dispatch(_resetTextureKernel, _resDiv, _resDiv, 1);
+            cs.SetTexture(_resetTextureKernel, "_VizTex", _readTex);
+            cs.Dispatch(_resetTextureKernel, _resDiv, _resDiv, 1);
             SwapBuffers();
             Utils.SwapTextures(ref _writeTex, ref _readTex);
         }

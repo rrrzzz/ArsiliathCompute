@@ -91,7 +91,12 @@ float2 GetNewDirFast(int idx, Boid b)
             if (x == 0 && y == 0)
                 continue;
 
-            float2 currentPos = b.pos + int2(x, y);  
+            float2 currentPos = b.pos + int2(x, y);
+
+            if(currentPos.x >= _Rez || currentPos.y >= _Rez
+                || currentPos.x < 0 || currentPos.y < 0)
+                    continue;
+            
             float2 dir = normalize(float2(x, y));
 
             if (dot(dir, b.dir) <= _VisionAngle)
@@ -101,29 +106,33 @@ float2 GetNewDirFast(int idx, Boid b)
 
             if (currentVal.x == 0)
                 continue;
-
+            
             isNeighbourFound = true;
             float2 toNeighbour = currentPos - b.pos;
 
             cohesionDir += toNeighbour;
       
-            steeringDir += float2(currentVal.y, currentVal.z);
-            //
-            // float dirX = currentVal.x > 0.5 ? currentVal.y : -currentVal.y;
-            // float dirY = currentVal.w > 0.5 ? currentVal.z : -currentVal.z;
-            //
-            // steeringDir += float2(dirX, dirY); 
+            float dirX = currentVal.x > 0.5 ? currentVal.y : -currentVal.y;
+            float dirY = currentVal.w > 0.5 ? currentVal.z : -currentVal.z;
+            
+            steeringDir += float2(dirX, dirY); 
         }
     }
 
     if (isNeighbourFound)
     {
+        bool isSteeringOn = false;
+        if (length(steeringDir) != 0)
+        {
+            isSteeringOn = true;
+            steeringDir = normalize(steeringDir);
+        }
+
         cohesionDir = normalize(cohesionDir);
-        steeringDir = normalize(steeringDir);
-    
+
         if (_CohesionOn)
             outDir += lerp(b.dir, cohesionDir, _CohesionStrength);
-        if (_SteeringOn)
+        if (_SteeringOn && isSteeringOn)
             outDir += lerp(b.dir, steeringDir, _SteeringStrength);
         if (_AvoidanceOn)
             outDir += lerp(b.dir, -cohesionDir, _AvoidanceStrength);
@@ -144,12 +153,12 @@ float2 GetNewDirFast(int idx, Boid b)
     return outDir;
 }
 
-[numthreads(1,1,1)]
+[numthreads(64,1,1)]
 void SimulateKernel (uint3 id : SV_DispatchThreadID)
 {    
     Boid b = _BoidReadBuffer[id.x];
     
-    float2 newDir = GetNewDirFast(id.x, b);    
+    float2 newDir = GetNewDirFast(id.x, b);
     float2 newPos = b.pos + newDir * _Speed;
     
     if (newPos.x < 0 || newPos.x >= _Rez)
@@ -173,12 +182,13 @@ void SimulateKernel (uint3 id : SV_DispatchThreadID)
     
     float xSign = b.dir.x >= 0 ? 0.75 : 0.25;
     float ySign = b.dir.y >= 0 ? 0.75 : 0.25;
-    
-    // _WriteTex[(int2)b.pos] = float4(xSign, b.dir.x, b.dir.y, ySign);
-    _WriteTex[(int2)b.pos] = float4(1, b.dir.x, b.dir.y, 0);
+
+    // _DebugBuffer[id.x] = float4(b.pos.x, b.pos.y, b.dir.x, b.dir.y);
+    _WriteTex[(int2)b.pos] = float4(xSign, abs(b.dir.x), abs(b.dir.y), ySign);
+    // _WriteTex[(int2)b.pos] = float4(1, b.dir.x, b.dir.y, 0);
 }
 
-[numthreads(1,1,1)]
+[numthreads(64,1,1)]
 void ResetKernel (uint3 id : SV_DispatchThreadID)
 {
     Boid b;
@@ -189,18 +199,17 @@ void ResetKernel (uint3 id : SV_DispatchThreadID)
     float xSign = b.dir.x >= 0 ? 0.75 : 0.25;
     float ySign = b.dir.y >= 0 ? 0.75 : 0.25;
     
-    _WriteTex[(int2)b.pos] = float4(1, b.dir.x, b.dir.y, 0);
-    // _WriteTex[(int2)b.pos] = float4(xSign, b.dir.x, b.dir.y, ySign);
+    _WriteTex[(int2)b.pos] = float4(xSign, abs(b.dir.x), abs(b.dir.y), ySign);
 }
 
-[numthreads(1,1,1)]
+[numthreads(64,1,1)]
 void RenderKernel (uint3 id : SV_DispatchThreadID)
 {
     Boid b = _BoidReadBuffer[id.x];
     _VizTex[(int2)b.pos] = float4(0, 1, 1, 1);    
 }
 
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
 void ResetTextureKernel (uint3 id : SV_DispatchThreadID)
 {
     _VizTex[id.xy] = 0;       
