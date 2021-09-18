@@ -7,10 +7,13 @@ using EasyButtons;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
-public class InstancingTest : MonoBehaviour
+public class InstancingShaderCode : MonoBehaviour
 {
     [SerializeField] private Material instanceMat;
+    [SerializeField] private Material simulationMat;
     [SerializeField] private Mesh mesh;
+    [SerializeField] private int resolution;
+    
 
     private ComputeBuffer _argsBuffer;
     private uint[] args = new uint[5];
@@ -28,16 +31,16 @@ public class InstancingTest : MonoBehaviour
 
         _argsBuffer = new ComputeBuffer(1, sizeof(uint) * 5, ComputeBufferType.IndirectArguments);
 
-        // Debug.Log(mesh.GetIndexCount(0));
-        // Debug.Log(args[2] = mesh.GetIndexStart(0));
-        // Debug.Log(mesh.GetBaseVertex(0));
-
         args[0] = mesh.GetIndexCount(0);
-        args[1] = 10;
+        args[1] = (uint)(resolution * resolution);
         args[2] = mesh.GetIndexStart(0);
         args[3] = mesh.GetBaseVertex(0);
 
         _argsBuffer.SetData(args);
+
+        var tex = simulationMat.GetTexture("_MainTex");
+        instanceMat.SetTexture("_InTex", tex);
+        instanceMat.SetInt("_Rez", tex.width);
 
         Graphics.DrawMeshInstancedIndirect(mesh, 0, instanceMat, _bounds, _argsBuffer);
     }

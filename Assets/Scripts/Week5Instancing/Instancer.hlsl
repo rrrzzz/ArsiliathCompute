@@ -1,16 +1,24 @@
+Texture2D<float4> _InTex;
+int _Rez;
+
 PackedVaryingsType VertexInstanced(AttributesMesh inputMesh, uint instanceID : SV_InstanceID)
 {
     // Instance object space
     float3 pos = inputMesh.positionOS;
 
     // SET COLOR
+    
+
+    int2 uv = int2(instanceID % _Rez, instanceID / _Rez);
+    //int2 uv = int2(instanceID % _Rez, instanceID / _Rez);
+    float4 col = _InTex[uv];
+    
     #ifdef ATTRIBUTES_NEED_COLOR
-    //inputMesh.color = float4(1, 0, 0, 1);
+    inputMesh.color = col;
     #endif
-
-
+    
     // Grid Position
-    float3 gpos = float3(instanceID * 2, 0, 0);
+    float3 gpos = float3(instanceID, 0, 0);
 
     // SET POSITION
     inputMesh.positionOS = (pos + gpos).xyz;
@@ -47,6 +55,7 @@ void FragInstanced(PackedVaryingsToPS packedInput,
 
     ///////////////////////////////////////////////
     // Workshop Customize
+
     surfaceData.baseColor = input.color.rgb;
     ///////////////////////////////////////////////
 

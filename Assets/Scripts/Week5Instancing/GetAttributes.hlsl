@@ -1,6 +1,6 @@
 #if defined (UNITY_PROCEDURAL_INSTANCING_ENABLED)
 StructuredBuffer<float3> _PosBuffer;
-StructuredBuffer<float4> _ColorsBuffer;
+StructuredBuffer<float4> _ColorBuffer;
 #endif
 
 
