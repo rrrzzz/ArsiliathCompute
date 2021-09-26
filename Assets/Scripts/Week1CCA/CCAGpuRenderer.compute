@@ -4,12 +4,11 @@
 Texture2D<float> _ReadTexture;
 Texture2D<float> _Mask;
 SamplerState sampler__ReadTexture;
-SamplerState sampler__Mask;
 
 RWTexture2D<float> _WriteTexture;
 RWTexture2D<float4> _OutTexture;
 
-uint _NumStates, _Threshold, _Rez, _ColorMode, _MaskRez;
+uint _NumStates, _Threshold, _Rez, _ColorMode;
 int _Range;
 bool _Moore;
 float4 _StateColors[32];
@@ -35,8 +34,8 @@ int UpdateCellState(inout uint currentState, uint2 cellCoord)
     uint nextState = currentState + 1 == _NumStates ? 0 : currentState + 1;
     uint counter = 0;    
     
-    float halfRez = _MaskRez * 0.5;
-    int range = (int)halfRez;
+    // float halfRez = _MaskRez * 0.5;
+    int range = _Range;
     
     for (int x = -range; x <= range; x++)
     {
@@ -44,15 +43,15 @@ int UpdateCellState(inout uint currentState, uint2 cellCoord)
         {
             if (x == 0 && y == 0) continue;
     
-            float2 uv = (float2(x, y) + halfRez) / _MaskRez;
-            float3 fullColor = _Mask.SampleLevel(sampler__Mask, uv, 0);
-            float barrier = max(max(fullColor.x, fullColor.y), fullColor.z);
-            bool shouldSample = barrier > _SampleThreshold;
-            if (shouldSample)
-            {
+            // float2 uv = (float2(x, y) + halfRez) / _MaskRez;
+            // float3 fullColor = _Mask.SampleLevel(sampler__Mask, uv, 0);
+            // float barrier = max(max(fullColor.x, fullColor.y), fullColor.z);
+            // bool shouldSample = barrier > _SampleThreshold;
+            // if (shouldSample)
+            // {
                 uint neighbourState = _ReadTexture.SampleLevel(sampler__ReadTexture, (cellCoord + int2(x,y)) / (float)_Rez, 0);
                 counter += (uint)(neighbourState == nextState);
-            }
+            // }
         }       
     }     
     

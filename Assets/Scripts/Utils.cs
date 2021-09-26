@@ -3,7 +3,7 @@ using Random = UnityEngine.Random;
 
 public static class Utils
 {
-    private static int s_ID_MainTex = Shader.PropertyToID("_UnlitColorMap");
+    public static int s_ID_MainTex = Shader.PropertyToID("_UnlitColorMap");
 
     public static void SwapTextures(ref RenderTexture first, ref RenderTexture second)
     {

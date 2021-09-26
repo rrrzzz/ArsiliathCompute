@@ -25,7 +25,7 @@ RWStructuredBuffer<Agent> _Agents;
 
 int _Rez, _AgentCount, _Range, _DiffuseRange;
 
-float _Time, _DirThreshold, _TrailDeposit, _TrailDecay, _BrushStrength, _BrushSize;
+float _Time, _DirThreshold, _TrailDeposit, _TrailDecay, _BrushStrength, _BrushSize, _DirMultiplier;
 float2 _BrushPos;
 
 [numthreads(32,32,1)]
@@ -91,7 +91,7 @@ void Simulate (uint3 id : SV_DispatchThreadID)
     if (maxVal >= 0.1)
     {
         int idx = (i - 1) * round(Random(id.xx * 0.1 + sin(_Time)).x);
-        a.dir = vectors[idx] * 6; // * 4, 5, 6, default sim settings to get lines effect 
+        a.dir = vectors[idx] * _DirMultiplier; // * 4, 5, 6, default sim settings to get lines effect 
     }
     else
     {

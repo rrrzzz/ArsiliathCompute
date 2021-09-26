@@ -153,9 +153,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   instanceMat: {fileID: 2100000, guid: 6801918446f364415a9f9a7a959bb427, type: 2}
-  simulationMat: {fileID: 2100000, guid: 576342be9ec58ac4487d3fe41fbf7234, type: 2}
+  simulationMat: {fileID: 2100000, guid: 973dc11c2c552be4ca11e228165c5470, type: 2}
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  resolution: 10
+  resolution: 500
+  sizeY: 1
+  spacing: 0.5
+  size: 0.5
 --- !u!4 &193196443
 Transform:
   m_ObjectHideFlags: 0
@@ -222,7 +225,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &496382525
 GameObject:
@@ -319,8 +322,123 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &562179379
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 562179381}
+  - component: {fileID: 562179380}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &562179380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562179379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e8dadbdcca2ba043bf79fe87d5f0938, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  caaCompute: {fileID: 7200000, guid: 939b655c33ce63a4ea4ab8a0c0e60642, type: 3}
+  resolution: 2048
+  threshold: 7
+  sampleThreshold: 0.5
+  numStates: 10
+  range: 6
+  moore: 1
+  stepsPerFrame: 1
+  framesToSkip: 5
+  caaMaterial: {fileID: 2100000, guid: 973dc11c2c552be4ca11e228165c5470, type: 2}
+  colorMode: 9
+  maskRez: 17
+  maskRezTrue: 2040
+--- !u!4 &562179381
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562179379}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -7.79518, y: -276.4002, z: -8.184658}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &566915837
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 566915838}
+  - component: {fileID: 566915839}
+  m_Layer: 0
+  m_Name: AgentsController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &566915838
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566915837}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.26605943, y: -0.0012521744, z: -0.7169673}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &566915839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566915837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdf5792c1ecff60428963dbc8319b4aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cs: {fileID: 7200000, guid: 2b9563f9669635344ae8c70dea7c969d, type: 3}
+  renderMat: {fileID: 2100000, guid: a41ca43c4e2be7443966bf66c475e891, type: 2}
+  resolution: 1024
+  stepsPerFrame: 0
+  stepInterval: 0
+  agentCount: 100000
+  range: 6
+  diffuseRange: 1
+  dirThreshold: 0.2
+  trailDeposit: 0.1
+  trailDecayFactor: 0.9
+  brushSize: 100
+  brushStrength: 5
+  isSimulating: 1
 --- !u!1 &648535144
 GameObject:
   m_ObjectHideFlags: 0
@@ -855,5 +973,5 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

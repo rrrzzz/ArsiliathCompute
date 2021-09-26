@@ -13,6 +13,7 @@ public class InstancingShaderCode : MonoBehaviour
     [SerializeField] private Material simulationMat;
     [SerializeField] private Mesh mesh;
     [SerializeField] private int resolution;
+    [SerializeField] private float sizeY;
     [SerializeField] private float spacing = 0.5f;
     [SerializeField] private float size = 0.5f;
     
@@ -29,8 +30,12 @@ public class InstancingShaderCode : MonoBehaviour
     
     private void Update()
     {
+        var tex = simulationMat.GetTexture(Utils.s_ID_MainTex);
+        if (!tex) return;
+        
+        // var resolution = tex.width;
+            
         _argsBuffer?.Release();
-
         _argsBuffer = new ComputeBuffer(1, sizeof(uint) * 5, ComputeBufferType.IndirectArguments);
 
         args[0] = mesh.GetIndexCount(0);
@@ -39,13 +44,13 @@ public class InstancingShaderCode : MonoBehaviour
         args[3] = mesh.GetBaseVertex(0);
 
         _argsBuffer.SetData(args);
-
-        var tex = simulationMat.GetTexture("_MainTex");
         
         instanceMat.SetTexture("_InTex", tex);
         instanceMat.SetInt("_Rez", resolution);
+        instanceMat.SetInt("_TexWidth", tex.width);
         instanceMat.SetFloat("_Spacing", spacing);
         instanceMat.SetFloat("_Size", size);
+        instanceMat.SetFloat("_SizeY", sizeY);
         instanceMat.SetMatrix("_TrMat", transform.localToWorldMatrix);
         instanceMat.SetVector("_Position", transform.position);
 

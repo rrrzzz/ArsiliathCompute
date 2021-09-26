@@ -1,7 +1,9 @@
 Texture2D<float4> _InTex;
 int _Rez;
+int _TexWidth;
 float _Spacing;
 float _Size;
+float _SizeY;
 float3 _Position;
 
 float4x4 _TrMat;
@@ -13,20 +15,22 @@ PackedVaryingsType VertexInstanced(AttributesMesh inputMesh, uint instanceID : S
 
     // SET COLOR
 
-    float2 uv = float2(instanceID % _Rez, instanceID / _Rez);
-
-
+    float2 gridCoord = float2(instanceID % _Rez, instanceID / _Rez);
     
-    // float2 uv = float2(instanceID % _Rez / (float)_Rez, instanceID / _Rez / (float)_Rez);
-    float4 col = _InTex[uv];
+    float4 col = _InTex[gridCoord];
     
-    // #ifdef ATTRIBUTES_NEED_COLOR
-    // inputMesh.color = col;
-    // #endif
+    #ifdef ATTRIBUTES_NEED_COLOR
+    inputMesh.color = col;
+    #endif
+
+    float height = _SizeY * (col.r * 1.5 + col.g * 1.7 + col.g * 1.3);
+
+    pos.y *= height;
+    pos.y += height * 0.5;
     
     // Grid Position
     float3 gpos = 0;
-    gpos.xz = uv - _Rez / 2.0;
+    gpos.xz = gridCoord - _Rez / 2.0;
     gpos *= _Spacing;
 
     pos.xz *= _Size;

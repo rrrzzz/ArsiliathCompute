@@ -16,6 +16,7 @@ namespace Week3Agents
         [SerializeField, Range(-1, 1)] private float dirThreshold = 0.1f;
         [SerializeField, Range(0, 1)] private float trailDeposit = 0.1f;
         [SerializeField, Range(0, 1)] private float trailDecayFactor = 0.1f;
+        [SerializeField] private float dirMultiplier = 6;
         [SerializeField] private float brushSize = 0.1f;
         [SerializeField] private float brushStrength = 0.1f;
         [SerializeField] private bool isSimulating;
@@ -108,6 +109,7 @@ namespace Week3Agents
             cs.SetFloat("_TrailDecay", trailDecayFactor);
             cs.SetFloat("_BrushStrength", brushStrength);
             cs.SetFloat("_BrushSize", brushSize);
+            cs.SetFloat("_DirMultiplier", dirMultiplier);
             cs.SetInt("_Range", range);
             cs.SetInt("_DiffuseRange", diffuseRange);
         }

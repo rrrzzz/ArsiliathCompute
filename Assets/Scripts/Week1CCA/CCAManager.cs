@@ -31,8 +31,8 @@ public class CCAManager : MonoBehaviour
     private int framesToSkip;
     [SerializeField] 
     private Material caaMaterial;
-    [SerializeField] 
-    private Material maskMaterial;
+    // [SerializeField] 
+    // private Material maskMaterial;
     [SerializeField] 
     private ColorMode colorMode;
 
@@ -43,9 +43,9 @@ public class CCAManager : MonoBehaviour
     private int maskRezTrue;
 
 
-    private RenderTexture _maskReadTexture;
-    private RenderTexture _maskWriteTexture;
-    private RenderTexture _maskOutTexture;
+    // private RenderTexture _maskReadTexture;
+    // private RenderTexture _maskWriteTexture;
+    // private RenderTexture _maskOutTexture;
     private RenderTexture _readTexture;
     private RenderTexture _writeTexture;
     private RenderTexture _outTexture;
@@ -68,20 +68,20 @@ public class CCAManager : MonoBehaviour
 
         for (int i = 0; i < stepsPerFrame; i++)
         {
-            caaCompute.SetTexture(_simulateKernelId, "_Mask", _maskOutTexture);
+            // caaCompute.SetTexture(_simulateKernelId, "_Mask", _maskOutTexture);
             caaCompute.SetTexture(_simulateKernelId, "_OutTexture", _outTexture);
             caaCompute.SetTexture(_simulateKernelId, s_ReadTexID, _readTexture);
             caaCompute.SetTexture(_simulateKernelId, s_WriteTexID, _writeTexture);
             caaCompute.Dispatch(_simulateKernelId, _dispatchThreadCount, _dispatchThreadCount, 1);
             SwapTextures();
             
-            
-            caaCompute.SetTexture(_simulateKernelId, "_OutTexture", _maskOutTexture);
-            caaCompute.SetTexture(_simulateKernelId, "_Mask", _outTexture);
-            caaCompute.SetTexture(_simulateKernelId, s_ReadTexID, _maskReadTexture);
-            caaCompute.SetTexture(_simulateKernelId, s_WriteTexID, _maskWriteTexture);
-            caaCompute.Dispatch(_simulateKernelId, _dispatchThreadCount, _dispatchThreadCount, 1);
-            SwapTexturesMask();
+            //
+            // caaCompute.SetTexture(_simulateKernelId, "_OutTexture", _maskOutTexture);
+            // caaCompute.SetTexture(_simulateKernelId, "_Mask", _outTexture);
+            // caaCompute.SetTexture(_simulateKernelId, s_ReadTexID, _maskReadTexture);
+            // caaCompute.SetTexture(_simulateKernelId, s_WriteTexID, _maskWriteTexture);
+            // caaCompute.Dispatch(_simulateKernelId, _dispatchThreadCount, _dispatchThreadCount, 1);
+            // SwapTexturesMask();
         }
     }
   
@@ -90,12 +90,12 @@ public class CCAManager : MonoBehaviour
     {
         _dispatchThreadCount = resolution / 16;
         CreateTextures();
-        CreateMaskTextures();
+        // CreateMaskTextures();
         caaMaterial.SetTexture(s_MainTex, _outTexture);
-        maskMaterial.SetTexture(s_MainTex, _maskOutTexture);
+        // maskMaterial.SetTexture(s_MainTex, _maskOutTexture);
         ApplyParams();
         ResetReadTexture();
-        ResetMaskReadTexture();
+        // ResetMaskReadTexture();
     }
 
     [Button]
@@ -103,13 +103,13 @@ public class CCAManager : MonoBehaviour
     {
         _dispatchThreadCount = resolution / 16;
         CreateTextures();
-        CreateMaskTextures();
+        // CreateMaskTextures();
         caaMaterial.SetTexture(s_MainTex, _outTexture);
-        maskMaterial.SetTexture(s_MainTex, _maskOutTexture);
+        // maskMaterial.SetTexture(s_MainTex, _maskOutTexture);
         RandomizeParameters();
         RandomizeColors();
         ResetReadTexture();
-        ResetMaskReadTexture();
+        // ResetMaskReadTexture();
     }
 
     [Button]
@@ -201,12 +201,12 @@ public class CCAManager : MonoBehaviour
         SwapTextures();
     }
     
-    private void ResetMaskReadTexture()
-    {
-        caaCompute.SetTexture(_resetKernelId, s_WriteTexID, _maskWriteTexture);
-        caaCompute.Dispatch(_resetKernelId, _dispatchThreadCount, _dispatchThreadCount, 1);
-        SwapTexturesMask();
-    }
+    // private void ResetMaskReadTexture()
+    // {
+    //     caaCompute.SetTexture(_resetKernelId, s_WriteTexID, _maskWriteTexture);
+    //     caaCompute.Dispatch(_resetKernelId, _dispatchThreadCount, _dispatchThreadCount, 1);
+    //     SwapTexturesMask();
+    // }
     
     private void CreateTextures()
     {
@@ -215,12 +215,12 @@ public class CCAManager : MonoBehaviour
         _readTexture = CreateRenderTex(RenderTextureFormat.RFloat, resolution);
     }
 
-    private void CreateMaskTextures()
-    {
-        _maskOutTexture = CreateRenderTex(RenderTextureFormat.ARGB32, maskRezTrue);
-        _maskWriteTexture = CreateRenderTex(RenderTextureFormat.RFloat, maskRezTrue);
-        _maskReadTexture = CreateRenderTex(RenderTextureFormat.RFloat, maskRezTrue);
-    }
+    // private void CreateMaskTextures()
+    // {
+    //     _maskOutTexture = CreateRenderTex(RenderTextureFormat.ARGB32, maskRezTrue);
+    //     _maskWriteTexture = CreateRenderTex(RenderTextureFormat.RFloat, maskRezTrue);
+    //     _maskReadTexture = CreateRenderTex(RenderTextureFormat.RFloat, maskRezTrue);
+    // }
     
     private RenderTexture CreateRenderTex(RenderTextureFormat format, int res)
     {
@@ -241,12 +241,12 @@ public class CCAManager : MonoBehaviour
         _writeTexture = tmp;
     }
     
-    private void SwapTexturesMask()
-    {
-        var tmp = _maskReadTexture;
-        _maskReadTexture = _maskWriteTexture;
-        _maskWriteTexture = tmp;
-    }
+    // private void SwapTexturesMask()
+    // {
+    //     var tmp = _maskReadTexture;
+    //     _maskReadTexture = _maskWriteTexture;
+    //     _maskWriteTexture = tmp;
+    // }
     
     private void SetKernels()
     {
