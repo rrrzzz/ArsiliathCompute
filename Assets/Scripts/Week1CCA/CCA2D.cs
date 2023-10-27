@@ -61,9 +61,6 @@ public class CCA2D : MonoBehaviour
         }
 
     }
-    
-    void Dick(){}
-    
 
     /*
      * 
